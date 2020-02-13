@@ -1,0 +1,14 @@
+python ppo/ppo.py with EX_NAME="ppo_bc_train_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="bc_train" SEEDS="[9456]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 SELF_PLAY_HORIZON=None TIMESTAMP_DIR=False
+python ppo/ppo.py with EX_NAME="ppo_sampling_sp_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="sampling_sp" SEEDS="[9456]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 TIMESTAMP_DIR=False
+
+python ppo/ppo.py with EX_NAME="ppo_bc_train_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="bc_train" SEEDS="[1887]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 SELF_PLAY_HORIZON=None TIMESTAMP_DIR=False
+python ppo/ppo.py with EX_NAME="ppo_sampling_sp_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="sampling_sp" SEEDS="[1887]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 TIMESTAMP_DIR=False
+
+python ppo/ppo.py with EX_NAME="ppo_bc_train_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="bc_train" SEEDS="[5578]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 SELF_PLAY_HORIZON=None TIMESTAMP_DIR=False
+python ppo/ppo.py with EX_NAME="ppo_sampling_sp_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="sampling_sp" SEEDS="[5578]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 TIMESTAMP_DIR=False
+
+python ppo/ppo.py with EX_NAME="ppo_bc_train_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="bc_train" SEEDS="[5987]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 SELF_PLAY_HORIZON=None TIMESTAMP_DIR=False
+python ppo/ppo.py with EX_NAME="ppo_sampling_sp_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="sampling_sp" SEEDS="[5987]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 TIMESTAMP_DIR=False
+
+python ppo/ppo.py with EX_NAME="ppo_bc_train_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="bc_train" SEEDS="[516]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 SELF_PLAY_HORIZON=None TIMESTAMP_DIR=False
+python ppo/ppo.py with EX_NAME="ppo_sampling_sp_random0" layout_name="random0" REW_SHAPING_HORIZON=4e6 PPO_RUN_TOT_TIMESTEPS=9e6 LR=1.5e-3 OTHER_AGENT_TYPE="sampling_sp" SEEDS="[516]" VF_COEF=0.1 MINIBATCHES=15 LR_ANNEALING=2 TIMESTAMP_DIR=False

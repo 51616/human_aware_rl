@@ -1,3 +1,7 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+import logging
+logging.getLogger("tensorflow").setLevel(logging.ERROR) # or any {DEBUG, INFO, WARN, ERROR, FATAL}
 import gym, time, os, seaborn
 import numpy as np
 import tensorflow as tf
@@ -24,7 +28,7 @@ from human_aware_rl.baselines_utils import get_vectorized_gym_env, create_model,
 from human_aware_rl.utils import create_dir_if_not_exists, reset_tf, delete_dir_if_exists, set_global_seed
 from human_aware_rl.imitation.behavioural_cloning import get_bc_agent_from_saved, DEFAULT_ENV_PARAMS, BC_SAVE_DIR
 from human_aware_rl.experiments.bc_experiments import BEST_BC_MODELS_PATH
-
+from copy import deepcopy
 
 # PARAMS
 @ex.config
@@ -127,6 +131,9 @@ def my_config():
     # Recommended to keep to true
     TRAJECTORY_SELF_PLAY = True
 
+    # sampling-sp
+    SAVE_EVERY = 10
+
 
     ##################
     # NETWORK PARAMS #
@@ -216,21 +223,10 @@ def my_config():
         "SAVE_BEST_THRESH": SAVE_BEST_THRESH,
         "TRAJECTORY_SELF_PLAY": TRAJECTORY_SELF_PLAY,
         "VIZ_FREQUENCY": VIZ_FREQUENCY,
-        "grad_updates_per_agent": GRAD_UPDATES_PER_AGENT
+        "grad_updates_per_agent": GRAD_UPDATES_PER_AGENT,
+        'SAVE_EVERY':SAVE_EVERY
     }
 
-def save_ppo_model(model, save_folder):
-    delete_dir_if_exists(save_folder, verbose=True)
-    simple_save(
-        tf.get_default_session(),
-        save_folder,
-        inputs={"obs": model.act_model.X},
-        outputs={
-            "action": model.act_model.action, 
-            "value": model.act_model.vf,
-            "action_probs": model.act_model.action_probs
-        }
-    )
 
 def configure_other_agent(params, gym_env, mlp, mdp):
     if params["OTHER_AGENT_TYPE"] == "hm":
@@ -261,6 +257,10 @@ def configure_other_agent(params, gym_env, mlp, mdp):
 
     elif params["OTHER_AGENT_TYPE"] == "sp":
         gym_env.self_play_randomization = 1
+    elif params["OTHER_AGENT_TYPE"] == "sampling_sp":
+        agent = RandomAgent() # just a place holder, will be replace in training loop
+        gym_env.self_play_randomization = 0.0 # sp with itself 30% of the time, the rest is sampling_sp
+        # gym_env.use_action_method = True
 
     else:
         raise ValueError("unknown type of agent to match with")
@@ -269,6 +269,7 @@ def configure_other_agent(params, gym_env, mlp, mdp):
         assert mlp.mdp == mdp
         agent.set_mdp(mdp)
         gym_env.other_agent = agent
+
 
 def load_training_data(run_name, seeds=None):
     run_dir = PPO_DATA_DIR + run_name + "/"
@@ -288,6 +289,19 @@ def load_training_data(run_name, seeds=None):
 
     return train_infos, config
 
+def save_ppo_model(model, save_folder):
+    delete_dir_if_exists(save_folder, verbose=True)
+    simple_save(
+        tf.get_default_session(),
+        save_folder,
+        inputs={"obs": model.act_model.X},
+        outputs={
+            "action": model.act_model.action, 
+            "value": model.act_model.vf,
+            "action_probs": model.act_model.action_probs
+        }
+    )
+
 def get_ppo_agent(save_dir, seed=0, best=False):
     save_dir = PPO_DATA_DIR + save_dir + '/seed{}'.format(seed)
     config = load_pickle(save_dir + '/config')
@@ -295,6 +309,12 @@ def get_ppo_agent(save_dir, seed=0, best=False):
         agent = get_agent_from_saved_model(save_dir + "/best", config["sim_threads"])
     else:
         agent = get_agent_from_saved_model(save_dir + "/ppo_agent", config["sim_threads"])
+    return agent, config
+
+def load_ppo_agent(save_dir, config_dir):
+    # save_dir = PPO_DATA_DIR + save_dir + '/seed{}'.format(seed)
+    config = load_pickle(config_dir + '/config')
+    agent = get_agent_from_saved_model(save_dir, config["sim_threads"])
     return agent, config
 
 def match_ppo_with_other_agent(save_dir, other_agent, n=1, display=False):
@@ -355,7 +375,8 @@ def ppo_run(params):
         create_dir_if_not_exists(curr_seed_dir)
 
         save_pickle(params, curr_seed_dir + "config")
-
+        params["CURR_SEED"] = seed
+        print('params["CURR_SEED"]:',params["CURR_SEED"])
         print("Creating env with params", params)
         # Configure mdp
         
@@ -368,6 +389,7 @@ def ppo_run(params):
             env, 'Overcooked-v0', featurize_fn=lambda x: mdp.lossless_state_encoding(x), **params
         )
         gym_env.self_play_randomization = 0 if params["SELF_PLAY_HORIZON"] is None else 1
+        # gym_env.self_play_randomization = 0.5 # if params["SELF_PLAY_HORIZON"] is None else 1
         gym_env.trajectory_sp = params["TRAJECTORY_SELF_PLAY"]
         gym_env.update_reward_shaping_param(1 if params["mdp_params"]["rew_shaping_params"] != 0 else 0)
 
@@ -377,9 +399,22 @@ def ppo_run(params):
         with tf.device('/device:GPU:{}'.format(params["GPU_ID"])):
             model = create_model(gym_env, "ppo_agent", **params)
 
+        # Create eval env
+        eval_params = deepcopy(params)
+        eval_params['OTHER_AGENT_TYPE']='bc_test' # eval with bc model
+        eval_mdp = OvercookedGridworld.from_layout_name(**eval_params["mdp_params"])
+        eval_env = OvercookedEnv(eval_mdp, **eval_params["env_params"])
+        eval_mlp = MediumLevelPlanner.from_pickle_or_compute(eval_mdp, NO_COUNTERS_PARAMS, force_compute=True) 
+        eval_gym_env = get_vectorized_gym_env(
+            eval_env, 'Overcooked-v0', featurize_fn=lambda x: eval_mdp.lossless_state_encoding(x), **eval_params
+        )
+        eval_gym_env.self_play_randomization = 0
+        eval_gym_env.trajectory_sp = params["TRAJECTORY_SELF_PLAY"]
+        eval_gym_env.update_reward_shaping_param(0)
+        configure_other_agent(eval_params, eval_gym_env, eval_mlp, eval_mdp)
+
         # Train model
-        params["CURR_SEED"] = seed
-        train_info = update_model(gym_env, model, **params)
+        train_info = update_model(gym_env, model, eval_gym_env, **params)
         
         # Save model
         save_ppo_model(model, curr_seed_dir + model.agent_name)

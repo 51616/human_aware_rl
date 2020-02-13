@@ -16,7 +16,7 @@ from baselines.ppo2.ppo2 import learn
 from baselines.common.vec_env import VecEnvWrapper
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.models import register
-        
+
 
 class RewardShapingEnv(VecEnvWrapper):
     """
@@ -306,7 +306,7 @@ def load_baselines_model(save_dir, agent_name, config):
     model.dummy_env = dummy_env
     return model
 
-def update_model(env, model, **kwargs):
+def update_model(env, model, eval_env = None, **kwargs):
     """
     Train agent defined by a model using the specified environment.
 
@@ -321,6 +321,7 @@ def update_model(env, model, **kwargs):
         network=kwargs["NETWORK_TYPE"], 
         env=env, 
         total_timesteps=kwargs["PPO_RUN_TOT_TIMESTEPS"],
+        eval_env = eval_env,
         nsteps=kwargs["BATCH_SIZE"],
         ent_coef=kwargs["ENTROPY"], 
         lr=kwargs["LR"], 
